@@ -1,0 +1,103 @@
+Step 1: Update and Install Java
+    Update system packages:
+      # sudo apt update && sudo apt upgrade -y
+
+    Install Java (Kafka requires Java):
+      # sudo apt install openjdk-11-jdk -y 
+
+    Verify the installation:
+      # java -version
+
+
+
+Step 2: Download and Extract Kafka
+    Download Kafka: Visit the Apache Kafka download page or use wget:
+      # wget https://downloads.apache.org/kafka/3.5.1/kafka_2.13-3.5.1.tgz   # If not working download from official Website
+    Extract Kafka:
+      # tar -xvf kafka_2.13-3.5.1.tgz
+    Move Kafka to /opt:
+      # sudo mv kafka_2.13-3.5.1 /opt/kafka
+
+
+Step 3: Configure Kafka
+    Navigate to the Kafka directory:
+      # cd /opt/kafka
+    Configure the broker by editing the server.properties file:
+      # nano config/server.properties
+          Broker ID: Unique ID for the broker
+          broker.id=1
+          Log directory: Directory to store logs
+          log.dirs=/tmp/kafka-logs
+          Listeners: Enable client connections
+          listeners=PLAINTEXT://localhost:9092
+          Adveritsed listeners:
+          advertised.listeners=PLAINTEXT://localhost:9092
+
+    Create a Dedicated Kafka User: Running Kafka as a root user is not recommended. Create a dedicated user:
+      # sudo useradd -m -s /bin/ kafka
+      # sudo chown -R kafka:kafka /opt/kafka
+
+
+    Optional: Run Kafka as a Service
+    Create a systemd service file for Kafka:
+      # sudo nano /etc/systemd/system/kafka.service
+                [Unit]
+                Description=Apache Kafka Server
+                Documentation=https://kafka.apache.org/documentation/
+                Requires=network.target zookeeper.service
+                After=network.target zookeeper.service
+
+                [Service]
+                Type=simple
+                User=kafka
+                Group=kafka
+                ExecStart=/bin/ -c '/opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties'
+                ExecStop=/bin/ -c '/opt/kafka/bin/kafka-server-stop.sh'
+                Restart=on-failure
+                RestartSec=10
+
+                [Install]
+                WantedBy=multi-user.target
+
+                [Install]
+                WantedBy=multi-user.target
+
+
+Step 4: Start Zookeeper and Kafka
+    Start Zookeeper: Kafka requires Zookeeper for managing brokers.
+      # bin/zookeeper-server-start.sh config/zookeeper.properties
+    Start Kafka Broker: Open a new terminal and run:
+      # bin/kafka-server-start.sh config/server.properties
+
+
+    Reload and Enable the Service: After editing the service file, reload systemd and enable the service:
+
+          # sudo systemctl daemon-reload
+          # sudo systemctl enable kafka
+
+          Start the Kafka Service:
+          # sudo systemctl start kafka
+          Check Kafka Service Status:
+          # sudo systemctl status kafka
+
+    Verify Kafka Service
+    Once the service is running, confirm Kafka is operational:
+
+
+  
+
+Step 5: Test Kafka
+    Create a Topic:
+    # bin/kafka-topics.sh --create --topic test-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+
+    Produce Messages:
+    # bin/kafka-console-producer.sh --topic test-topic --bootstrap-server localhost:9092
+
+    Type messages in the console to send them.
+
+    Consume Messages: Open another terminal and run:
+    # bin/kafka-console-consumer.sh --topic test-topic --from-beginning --bootstrap-server localhost:9092
+
+    List Kafka topics:
+    # /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092
+
